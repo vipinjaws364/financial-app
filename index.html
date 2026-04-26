@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Price Dashboard</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --card-bg: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --up: #16a34a;
+        --down: #dc2626;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 32px 16px;
+      }
+
+      .dashboard {
+        width: min(900px, 100%);
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+      }
+
+      .header {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .title {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
+      .subtitle {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        text-align: left;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: #fafbfc;
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+      }
+
+      tbody td {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.98rem;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .ticker {
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .price {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .change {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .positive {
+        color: var(--up);
+      }
+
+      .negative {
+        color: var(--down);
+      }
+
+      @media (max-width: 640px) {
+        .header,
+        thead th,
+        tbody td {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="dashboard" role="main" aria-label="Stock price dashboard">
+      <header class="header">
+        <h1 class="title">Stock Price Dashboard</h1>
+        <p class="subtitle">Live market snapshot (sample data)</p>
+      </header>
+
+      <table aria-label="Stock prices table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Price</th>
+            <th>Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ticker">AAPL</td>
+            <td class="price">$189.42</td>
+            <td class="change positive">+1.18%</td>
+          </tr>
+          <tr>
+            <td class="ticker">MSFT</td>
+            <td class="price">$421.73</td>
+            <td class="change negative">-0.46%</td>
+          </tr>
+          <tr>
+            <td class="ticker">GOOGL</td>
+            <td class="price">$171.05</td>
+            <td class="change positive">+0.84%</td>
+          </tr>
+          <tr>
+            <td class="ticker">TSLA</td>
+            <td class="price">$177.66</td>
+            <td class="change negative">-1.12%</td>
+          </tr>
+          <tr>
+            <td class="ticker">NVDA</td>
+            <td class="price">$941.21</td>
+            <td class="change positive">+2.34%</td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>
