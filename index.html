@@ -3,16 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Stock Price Dashboard</title>
+    <title>NSE Intraday Signals</title>
     <style>
       :root {
-        --bg: #f4f7fb;
-        --card-bg: #ffffff;
-        --text: #1f2937;
-        --muted: #6b7280;
-        --border: #e5e7eb;
-        --up: #16a34a;
-        --down: #dc2626;
+        --bg: #0b0f14;
+        --surface: #121820;
+        --surface2: #1a2230;
+        --border: #2a3444;
+        --text: #e8edf4;
+        --muted: #8b98ab;
+        --accent: #3b82f6;
+        --accent-dim: rgba(59, 130, 246, 0.15);
+        --buy: #22c55e;
+        --sell: #ef4444;
+        --warn: #f59e0b;
       }
 
       * {
@@ -22,143 +26,545 @@
       body {
         margin: 0;
         min-height: 100vh;
-        font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        background: linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%);
+        font-family: "DM Sans", Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: radial-gradient(ellipse 120% 80% at 50% -20%, #1e293b 0%, var(--bg) 55%);
         color: var(--text);
-        display: grid;
-        place-items: center;
-        padding: 32px 16px;
+        padding: 28px 16px 48px;
       }
 
-      .dashboard {
-        width: min(900px, 100%);
-        background: var(--card-bg);
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+
+      .top-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .brand p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .win-card {
+        background: linear-gradient(145deg, var(--surface2), var(--surface));
         border: 1px solid var(--border);
-        border-radius: 16px;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        border-radius: 14px;
+        padding: 16px 20px;
+        min-width: 200px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      }
+
+      .win-card .label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .win-card .value {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .win-card .sub {
+        margin-top: 4px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto 28px;
+        padding: 16px 24px;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #fff;
+        background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 32px rgba(37, 99, 235, 0.45);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .hero {
+        background: linear-gradient(160deg, var(--surface2) 0%, #141c28 100%);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 28px 26px 30px;
+        margin-bottom: 28px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      }
+
+      .hero-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .hero-title {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+
+      .hero-stock {
+        font-size: 1.85rem;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.02em;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+      }
+
+      .badge.buy {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--buy);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+      }
+
+      .badge.sell {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--sell);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+
+      .metric .m-label {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .metric .m-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .confidence-wrap {
+        margin-bottom: 18px;
+      }
+
+      .confidence-wrap .m-label {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .bar {
+        height: 10px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--border);
         overflow: hidden;
       }
 
-      .header {
-        padding: 22px 24px;
-        border-bottom: 1px solid var(--border);
+      .bar > span {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #22c55e, #3b82f6);
       }
 
-      .title {
-        margin: 0;
-        font-size: 1.35rem;
-        font-weight: 700;
-        letter-spacing: 0.01em;
-      }
-
-      .subtitle {
-        margin: 6px 0 0;
-        color: var(--muted);
+      .reasoning {
         font-size: 0.95rem;
+        line-height: 1.55;
+        color: #c8d2e0;
+        margin: 0;
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+
+      .empty-hero {
+        text-align: center;
+        padding: 24px 12px;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+      }
+
+      .panel-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 700;
+        font-size: 1rem;
       }
 
       table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 0.88rem;
       }
 
       thead th {
         text-align: left;
-        font-size: 0.82rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
+        padding: 12px 14px;
+        font-size: 0.72rem;
         text-transform: uppercase;
+        letter-spacing: 0.06em;
         color: var(--muted);
-        background: #fafbfc;
+        background: #0f141c;
         border-bottom: 1px solid var(--border);
-        padding: 14px 24px;
       }
 
       tbody td {
-        padding: 16px 24px;
+        padding: 12px 14px;
         border-bottom: 1px solid var(--border);
-        font-size: 0.98rem;
+        font-variant-numeric: tabular-nums;
       }
 
       tbody tr:last-child td {
         border-bottom: none;
       }
 
-      .ticker {
+      tbody tr:hover td {
+        background: rgba(59, 130, 246, 0.06);
+      }
+
+      .result-win {
+        color: var(--buy);
         font-weight: 700;
-        letter-spacing: 0.02em;
       }
 
-      .price {
-        font-variant-numeric: tabular-nums;
-      }
-
-      .change {
+      .result-loss {
+        color: var(--sell);
         font-weight: 700;
-        font-variant-numeric: tabular-nums;
       }
 
-      .positive {
-        color: var(--up);
+      .result-expired {
+        color: var(--warn);
+        font-weight: 600;
       }
 
-      .negative {
-        color: var(--down);
+      .result-pending {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .toggle-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        color: var(--text);
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .toggle-btn.on {
+        background: var(--accent-dim);
+        border-color: var(--accent);
+        color: #93c5fd;
+      }
+
+      .status-msg {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+        min-height: 1.2em;
+        margin-bottom: 12px;
       }
 
       @media (max-width: 640px) {
-        .header,
-        thead th,
-        tbody td {
-          padding-left: 14px;
-          padding-right: 14px;
+        .hero {
+          padding: 20px 16px;
         }
       }
     </style>
   </head>
   <body>
-    <main class="dashboard" role="main" aria-label="Stock price dashboard">
-      <header class="header">
-        <h1 class="title">Stock Price Dashboard</h1>
-        <p class="subtitle">Live market snapshot (sample data)</p>
-      </header>
+    <div class="wrap">
+      <div class="top-bar">
+        <div class="brand">
+          <h1>NSE Intraday Desk</h1>
+          <p>Personal signal board · Claude + live technical + news context</p>
+        </div>
+        <div class="win-card" aria-live="polite">
+          <div class="label">7-day win rate</div>
+          <div class="value" id="win-rate">—</div>
+          <div class="sub" id="win-rate-sub">Resolved trades (wins ÷ wins+losses)</div>
+        </div>
+      </div>
 
-      <table aria-label="Stock prices table">
-        <thead>
-          <tr>
-            <th>Ticker</th>
-            <th>Price</th>
-            <th>Change</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="ticker">AAPL</td>
-            <td class="price">$189.42</td>
-            <td class="change positive">+1.18%</td>
-          </tr>
-          <tr>
-            <td class="ticker">MSFT</td>
-            <td class="price">$421.73</td>
-            <td class="change negative">-0.46%</td>
-          </tr>
-          <tr>
-            <td class="ticker">GOOGL</td>
-            <td class="price">$171.05</td>
-            <td class="change positive">+0.84%</td>
-          </tr>
-          <tr>
-            <td class="ticker">TSLA</td>
-            <td class="price">$177.66</td>
-            <td class="change negative">-1.12%</td>
-          </tr>
-          <tr>
-            <td class="ticker">NVDA</td>
-            <td class="price">$941.21</td>
-            <td class="change positive">+2.34%</td>
-          </tr>
-        </tbody>
-      </table>
-    </main>
+      <p class="status-msg" id="status-msg"></p>
+
+      <button type="button" class="btn-primary" id="btn-generate">
+        Generate today’s signal
+      </button>
+
+      <section class="hero" aria-labelledby="today-heading">
+        <div class="hero-header">
+          <div>
+            <p class="hero-title" id="today-heading">Today’s call</p>
+            <p class="hero-stock" id="hero-ticker">No signal yet</p>
+          </div>
+          <span class="badge buy" id="hero-badge" hidden>BUY</span>
+        </div>
+
+        <div id="hero-empty" class="empty-hero">
+          Run analysis to generate today’s intraday pick. Past signals appear in the table below.
+        </div>
+
+        <div id="hero-body" hidden>
+          <div class="metrics">
+            <div class="metric">
+              <div class="m-label">Entry</div>
+              <div class="m-value" id="hero-entry">₹ —</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Target</div>
+              <div class="m-value" id="hero-target">₹ —</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Stop loss</div>
+              <div class="m-value" id="hero-stop">₹ —</div>
+            </div>
+          </div>
+          <div class="confidence-wrap">
+            <div class="m-label">
+              <span>Confidence</span>
+              <span id="hero-confidence-text">0%</span>
+            </div>
+            <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+              <span id="hero-confidence-bar" style="width: 0%"></span>
+            </div>
+          </div>
+          <p class="reasoning" id="hero-reasoning"></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">Last 7 days</div>
+        <div style="overflow-x: auto">
+          <table aria-label="Signals history">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Stock</th>
+                <th>Direction</th>
+                <th>Entry</th>
+                <th>Target</th>
+                <th>Stop loss</th>
+                <th>Result</th>
+                <th>I acted</th>
+              </tr>
+            </thead>
+            <tbody id="signals-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const inr = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 2,
+      });
+
+      const statusEl = document.getElementById("status-msg");
+      const winRateEl = document.getElementById("win-rate");
+      const winRateSub = document.getElementById("win-rate-sub");
+      const btn = document.getElementById("btn-generate");
+
+      const heroTicker = document.getElementById("hero-ticker");
+      const heroBadge = document.getElementById("hero-badge");
+      const heroEmpty = document.getElementById("hero-empty");
+      const heroBody = document.getElementById("hero-body");
+      const heroEntry = document.getElementById("hero-entry");
+      const heroTarget = document.getElementById("hero-target");
+      const heroStop = document.getElementById("hero-stop");
+      const heroConfText = document.getElementById("hero-confidence-text");
+      const heroConfBar = document.getElementById("hero-confidence-bar");
+      const heroReason = document.getElementById("hero-reasoning");
+      const tbody = document.getElementById("signals-body");
+
+      function setStatus(text, isError = false) {
+        statusEl.textContent = text;
+        statusEl.style.color = isError ? "#f87171" : "var(--muted)";
+      }
+
+      function renderToday(today) {
+        if (!today) {
+          heroEmpty.hidden = false;
+          heroBody.hidden = true;
+          heroBadge.hidden = true;
+          heroTicker.textContent = "No signal yet";
+          return;
+        }
+        heroEmpty.hidden = true;
+        heroBody.hidden = false;
+        heroBadge.hidden = false;
+        heroTicker.textContent = today.ticker;
+        const dir = (today.direction || "").toUpperCase();
+        heroBadge.textContent = dir;
+        heroBadge.classList.remove("buy", "sell");
+        heroBadge.classList.add(dir === "SELL" ? "sell" : "buy");
+
+        heroEntry.textContent = inr.format(Number(today.entry_price));
+        heroTarget.textContent = inr.format(Number(today.target_price));
+        heroStop.textContent = inr.format(Number(today.stop_loss));
+
+        const conf = Number(today.confidence_score) || 0;
+        heroConfText.textContent = `${conf.toFixed(1)}%`;
+        heroConfBar.style.width = `${Math.min(100, Math.max(0, conf))}%`;
+        heroReason.textContent = today.reasoning || "—";
+      }
+
+      function resultClass(res) {
+        const r = (res || "").toUpperCase();
+        if (r === "WIN") return "result-win";
+        if (r === "LOSS") return "result-loss";
+        if (r === "EXPIRED") return "result-expired";
+        return "result-pending";
+      }
+
+      function renderTable(rows) {
+        tbody.innerHTML = "";
+        for (const row of rows) {
+          const tr = document.createElement("tr");
+          const acted = !!row.acted;
+          tr.innerHTML = `
+            <td>${row.signal_date}</td>
+            <td><strong>${row.ticker}</strong></td>
+            <td>${row.direction}</td>
+            <td>${inr.format(Number(row.entry_price))}</td>
+            <td>${inr.format(Number(row.target_price))}</td>
+            <td>${inr.format(Number(row.stop_loss))}</td>
+            <td class="${resultClass(row.result)}">${row.result || "PENDING"}</td>
+            <td><button type="button" class="toggle-btn ${acted ? "on" : ""}" data-id="${row.id}">${acted ? "Yes" : "No"}</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+
+        tbody.querySelectorAll(".toggle-btn").forEach((b) => {
+          b.addEventListener("click", async () => {
+            const id = b.getAttribute("data-id");
+            const next = !b.classList.contains("on");
+            setStatus("Updating…");
+            try {
+              const r = await fetch("/update-acted", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, acted: next }),
+              });
+              const data = await r.json();
+              if (!r.ok) throw new Error(data.error || "Update failed");
+              b.classList.toggle("on", next);
+              b.textContent = next ? "Yes" : "No";
+              setStatus("");
+            } catch (e) {
+              setStatus(e.message, true);
+            }
+          });
+        });
+      }
+
+      async function loadSignals() {
+        setStatus("Loading…");
+        try {
+          const r = await fetch("/signals");
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Failed to load");
+
+          const wr = data.win_rate_pct;
+          if (wr == null) {
+            winRateEl.textContent = "—";
+            winRateSub.textContent = "No resolved wins/losses in the last 7 days.";
+          } else {
+            winRateEl.textContent = `${wr}%`;
+            const s = data.stats || {};
+            winRateSub.textContent = `${s.wins ?? 0} wins · ${s.losses ?? 0} losses (resolved)`;
+          }
+
+          renderToday(data.today_signal);
+          renderTable(data.signals || []);
+          setStatus("");
+        } catch (e) {
+          setStatus(e.message, true);
+        }
+      }
+
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        setStatus("Running analysis (may take a minute)…");
+        try {
+          const r = await fetch("/generate-signal", { method: "POST" });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Generation failed");
+          await loadSignals();
+          setStatus("Signal saved.");
+        } catch (e) {
+          setStatus(e.message, true);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      loadSignals();
+    </script>
   </body>
 </html>
