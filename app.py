@@ -6,10 +6,13 @@ from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, redirect, request, send_from_directory
 from supabase import create_client
 
-from analysis_engine import run_analysis
+from kite_auth import exchange_request_token, get_login_url
+from nifty_signal import generate_nifty_weekly_signal
+from option_chain import get_option_chain
+from signal_engine_v2 import run_signal_generation
 
 load_dotenv()
 
@@ -44,12 +47,57 @@ def index() -> Any:
     return send_from_directory(".", "index.html")
 
 
-@app.post("/generate-signal")
-def generate_signal() -> Any:
+@app.get("/auth")
+def kite_auth() -> Any:
     try:
-        signal = run_analysis()
-        return jsonify(signal)
-    except Exception as exc:  # noqa: BLE001 — surface errors to UI
+        return redirect(get_login_url())
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.get("/callback")
+def kite_callback() -> Any:
+    try:
+        request_token = (request.args.get("request_token") or "").strip()
+        if not request_token:
+            return jsonify({"error": "Missing request_token in callback URL."}), 400
+        session_data = exchange_request_token(request_token)
+        return jsonify(
+            {
+                "message": "Authentication successful",
+                "user_name": session_data.get("user_name"),
+            }
+        )
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.post("/generate")
+def generate() -> Any:
+    try:
+        return jsonify(run_signal_generation())
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.post("/nifty-signal")
+def nifty_signal() -> Any:
+    try:
+        return jsonify(generate_nifty_weekly_signal())
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.get("/option-chain")
+def option_chain() -> Any:
+    try:
+        symbol = (request.args.get("symbol") or "").strip().upper()
+        expiry = (request.args.get("expiry") or "").strip()
+        if not symbol or not expiry:
+            return jsonify({"error": "Provide query params: symbol, expiry(YYYY-MM-DD)."}), 400
+        data = get_option_chain(symbol, expiry)
+        return jsonify(data)
+    except Exception as exc:  # noqa: BLE001
         return jsonify({"error": str(exc)}), 500
 
 

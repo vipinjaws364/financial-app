@@ -110,6 +110,18 @@
         transition: transform 0.15s ease, box-shadow 0.15s ease;
       }
 
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 18px;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+      }
+
       .btn-primary:hover:not(:disabled) {
         transform: translateY(-1px);
         box-shadow: 0 12px 32px rgba(37, 99, 235, 0.45);
@@ -127,6 +139,10 @@
         padding: 28px 26px 30px;
         margin-bottom: 28px;
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      }
+
+      .hero.nifty {
+        border-color: #24527a;
       }
 
       .hero-header {
@@ -231,6 +247,17 @@
         border: 1px solid var(--border);
       }
 
+      .volume-story {
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #2a3a4f;
+        background: rgba(59, 130, 246, 0.08);
+        color: #cfe3ff;
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
       .empty-hero {
         text-align: center;
         padding: 24px 12px;
@@ -329,6 +356,9 @@
       }
 
       @media (max-width: 640px) {
+        .btn-primary {
+          max-width: 100%;
+        }
         .hero {
           padding: 20px 16px;
         }
@@ -351,21 +381,87 @@
 
       <p class="status-msg" id="status-msg"></p>
 
-      <button type="button" class="btn-primary" id="btn-generate">
-        Generate today’s signal
-      </button>
+      <div class="btn-row">
+        <button type="button" class="btn-primary btn-secondary" id="btn-generate-nifty">
+          Generate today's Nifty signal
+        </button>
+        <button type="button" class="btn-primary" id="btn-generate">
+          Generate today's stock signal
+        </button>
+      </div>
+
+      <section class="hero nifty" aria-labelledby="nifty-heading">
+        <div class="hero-header">
+          <div>
+            <p class="hero-title" id="nifty-heading">Today's Nifty signal (weekly expiry)</p>
+            <p class="hero-stock" id="nifty-direction">No signal yet</p>
+          </div>
+          <span class="badge buy" id="nifty-badge" hidden>BUY</span>
+        </div>
+
+        <div id="nifty-empty" class="empty-hero">
+          Generate Nifty weekly signal to view ATM, premium levels and VIX condition.
+        </div>
+
+        <div id="nifty-body" hidden>
+          <div class="metrics">
+            <div class="metric">
+              <div class="m-label">ATM strike</div>
+              <div class="m-value" id="nifty-atm">—</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Recommended strike</div>
+              <div class="m-value" id="nifty-rec">—</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Expiry</div>
+              <div class="m-value" id="nifty-expiry">—</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Entry premium</div>
+              <div class="m-value" id="nifty-entry">₹ —</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Stop loss premium</div>
+              <div class="m-value" id="nifty-stop">₹ —</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Target premium</div>
+              <div class="m-value" id="nifty-target">₹ —</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">VIX condition</div>
+              <div class="m-value" id="nifty-vix">—</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Lot size (₹10L)</div>
+              <div class="m-value" id="nifty-lot">—</div>
+            </div>
+          </div>
+          <div class="confidence-wrap">
+            <div class="m-label">
+              <span>Confidence</span>
+              <span id="nifty-confidence-text">0%</span>
+            </div>
+            <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+              <span id="nifty-confidence-bar" style="width: 0%"></span>
+            </div>
+          </div>
+          <p class="reasoning" id="nifty-reasoning"></p>
+        </div>
+      </section>
 
       <section class="hero" aria-labelledby="today-heading">
         <div class="hero-header">
           <div>
-            <p class="hero-title" id="today-heading">Today’s call</p>
+            <p class="hero-title" id="today-heading">Today's stock signal (multi-day trade)</p>
             <p class="hero-stock" id="hero-ticker">No signal yet</p>
           </div>
           <span class="badge buy" id="hero-badge" hidden>BUY</span>
         </div>
 
         <div id="hero-empty" class="empty-hero">
-          Run analysis to generate today’s intraday pick. Past signals appear in the table below.
+          Generate stock signal to view entry, target, stop loss and analysis.
         </div>
 
         <div id="hero-body" hidden>
@@ -392,6 +488,7 @@
               <span id="hero-confidence-bar" style="width: 0%"></span>
             </div>
           </div>
+          <p class="volume-story" id="hero-volume-story">Volume story unavailable.</p>
           <p class="reasoning" id="hero-reasoning"></p>
         </div>
       </section>
@@ -429,6 +526,23 @@
       const winRateEl = document.getElementById("win-rate");
       const winRateSub = document.getElementById("win-rate-sub");
       const btn = document.getElementById("btn-generate");
+      const btnNifty = document.getElementById("btn-generate-nifty");
+
+      const niftyDirection = document.getElementById("nifty-direction");
+      const niftyBadge = document.getElementById("nifty-badge");
+      const niftyEmpty = document.getElementById("nifty-empty");
+      const niftyBody = document.getElementById("nifty-body");
+      const niftyAtm = document.getElementById("nifty-atm");
+      const niftyRec = document.getElementById("nifty-rec");
+      const niftyExpiry = document.getElementById("nifty-expiry");
+      const niftyEntry = document.getElementById("nifty-entry");
+      const niftyStop = document.getElementById("nifty-stop");
+      const niftyTarget = document.getElementById("nifty-target");
+      const niftyVix = document.getElementById("nifty-vix");
+      const niftyLot = document.getElementById("nifty-lot");
+      const niftyConfText = document.getElementById("nifty-confidence-text");
+      const niftyConfBar = document.getElementById("nifty-confidence-bar");
+      const niftyReason = document.getElementById("nifty-reasoning");
 
       const heroTicker = document.getElementById("hero-ticker");
       const heroBadge = document.getElementById("hero-badge");
@@ -439,6 +553,7 @@
       const heroStop = document.getElementById("hero-stop");
       const heroConfText = document.getElementById("hero-confidence-text");
       const heroConfBar = document.getElementById("hero-confidence-bar");
+      const heroVolumeStory = document.getElementById("hero-volume-story");
       const heroReason = document.getElementById("hero-reasoning");
       const tbody = document.getElementById("signals-body");
 
@@ -447,12 +562,59 @@
         statusEl.style.color = isError ? "#f87171" : "var(--muted)";
       }
 
+      function extractVolumeStory(signal) {
+        const fromLayer =
+          signal?.layer_breakdown?.layer4_stock_specific?.inputs?.volume_story;
+        if (fromLayer && String(fromLayer).trim()) {
+          return String(fromLayer).trim();
+        }
+
+        const reason = String(signal?.reasoning || "");
+        const match = reason.match(/Volume Story:\s*(.*)$/i);
+        if (match && match[1]) {
+          return match[1].trim();
+        }
+        return "Volume story unavailable for this signal.";
+      }
+
+      function renderNifty(signal) {
+        if (!signal) {
+          niftyEmpty.hidden = false;
+          niftyBody.hidden = true;
+          niftyBadge.hidden = true;
+          niftyDirection.textContent = "No signal yet";
+          return;
+        }
+        niftyEmpty.hidden = true;
+        niftyBody.hidden = false;
+        niftyBadge.hidden = false;
+        niftyDirection.textContent = signal.direction || "—";
+        const dir = String(signal.direction || "").toUpperCase();
+        niftyBadge.textContent = dir.includes("PUT") ? "BUY PUT" : "BUY CALL";
+        niftyBadge.classList.remove("buy", "sell");
+        niftyBadge.classList.add(dir.includes("PUT") ? "sell" : "buy");
+
+        niftyAtm.textContent = signal.atm_strike ?? "—";
+        niftyRec.textContent = signal.recommended_strike ?? "—";
+        niftyExpiry.textContent = signal.expiry ?? "—";
+        niftyEntry.textContent = inr.format(Number(signal.entry_premium || 0));
+        niftyStop.textContent = inr.format(Number(signal.stop_loss_premium || 0));
+        niftyTarget.textContent = inr.format(Number(signal.target_premium || 0));
+        niftyVix.textContent = signal.vix_condition || "—";
+        niftyLot.textContent = Number(signal.lot_size || 0).toLocaleString("en-IN");
+        const conf = Number(signal.confidence_score || 0);
+        niftyConfText.textContent = `${conf.toFixed(1)}%`;
+        niftyConfBar.style.width = `${Math.min(100, Math.max(0, conf))}%`;
+        niftyReason.textContent = signal.reasoning || "—";
+      }
+
       function renderToday(today) {
         if (!today) {
           heroEmpty.hidden = false;
           heroBody.hidden = true;
           heroBadge.hidden = true;
           heroTicker.textContent = "No signal yet";
+          heroVolumeStory.textContent = "Volume story unavailable.";
           return;
         }
         heroEmpty.hidden = true;
@@ -471,6 +633,7 @@
         const conf = Number(today.confidence_score) || 0;
         heroConfText.textContent = `${conf.toFixed(1)}%`;
         heroConfBar.style.width = `${Math.min(100, Math.max(0, conf))}%`;
+        heroVolumeStory.textContent = extractVolumeStory(today);
         heroReason.textContent = today.reasoning || "—";
       }
 
@@ -550,17 +713,33 @@
 
       btn.addEventListener("click", async () => {
         btn.disabled = true;
-        setStatus("Running analysis (may take a minute)…");
+        setStatus("Running stock signal analysis (may take a minute)…");
         try {
-          const r = await fetch("/generate-signal", { method: "POST" });
+          const r = await fetch("/generate", { method: "POST" });
           const data = await r.json();
           if (!r.ok) throw new Error(data.error || "Generation failed");
           await loadSignals();
-          setStatus("Signal saved.");
+          setStatus("Stock signal saved.");
         } catch (e) {
           setStatus(e.message, true);
         } finally {
           btn.disabled = false;
+        }
+      });
+
+      btnNifty.addEventListener("click", async () => {
+        btnNifty.disabled = true;
+        setStatus("Generating Nifty weekly signal…");
+        try {
+          const r = await fetch("/nifty-signal", { method: "POST" });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Nifty signal generation failed");
+          renderNifty(data);
+          setStatus("Nifty weekly signal generated.");
+        } catch (e) {
+          setStatus(e.message, true);
+        } finally {
+          btnNifty.disabled = false;
         }
       });
 

@@ -7,3 +7,4 @@ anthropic>=0.40
 supabase>=2.0
 requests>=2.31
 schedule>=1.2
+kiteconnect>=5.0
